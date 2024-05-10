@@ -1,5 +1,5 @@
 const Order = require("../models/order");
-const { verifyTokenAndAdmin, verifyTokenAndAuthorization } = require("./verifyToken");
+const { verifyToken, verifyTokenAndAdmin, verifyTokenAndAuthorization } = require("./verifyToken");
 
 const router = require("express").Router();
 
@@ -65,7 +65,7 @@ router.get("/", verifyTokenAndAdmin, async (req, res) => {
 router.get("/income", verifyTokenAndAdmin, async(req, res) => {
     const date = new Date();
     const lastMonth = new Date(date.setMonth(date.getMonth() - 1));
-    const previousMonth = new Date(new Date.setMonth(date.getMonth() - 1));
+    const previousMonth = new Date(new Date().setMonth(lastMonth.getMonth() - 1));
 
     try{
         const income = await Order.aggregate([
@@ -75,18 +75,16 @@ router.get("/income", verifyTokenAndAdmin, async(req, res) => {
                     month: {$month: "$createdAt"},
                     sales: "$amount",
                 },
-                {
-                    $group:{
+                $group: {
                         _id:"$month",
                         total: {$sum: "$sales"},
-                    }
-                }
-            }
-        ])
-
-    }catch(err){
+                },
+            },
+        ]);
+        res.status(200).json(income);
+    }  catch(err){
         res.status(500).json(err)
     }
-})
+});
 
 module.exports = router;
